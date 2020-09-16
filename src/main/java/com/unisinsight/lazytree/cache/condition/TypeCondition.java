@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 public enum TypeCondition implements Condition{
-    CHANNEL_1(6, 1),CHANNEL_4(6, 4),CHANNEL_8(6,8) ;
+    CHANNEL_1(6, 1),CHANNEL_4(6, 4),CHANNEL_8(6,8),UNKNOW(0, 0), ORG(0) ;
 
     private Integer type;
     private Integer subType;
@@ -18,7 +18,7 @@ public enum TypeCondition implements Condition{
     static {
         map = new HashMap<>(values().length);
         for (TypeCondition type : values()) {
-            map.put("" + type.type + "_" + type.subType, type);
+            map.put(type.toString(), type);
         }
     }
 
@@ -33,8 +33,31 @@ public enum TypeCondition implements Condition{
     }
 
     @Override
+    public String toString(){
+        if (subType == null) {
+            return "" + type;
+        }
+        return "" + type + "_" + subType;
+    }
+
+    @Override
     public boolean accord(TreeNode treeNode) {
-        return type == treeNode.getType() && subType == treeNode.getSubType();
+        return this.equals(treeNode.getType());
+    }
+
+    public static TypeCondition get(String type, String subType) {
+        String key;
+        if (subType == null) {
+            key = "" + type;
+        } else {
+            key = "" + type + "_" + subType;
+        }
+
+        TypeCondition result = map.get(key);
+        if (result == null) {
+            return UNKNOW;
+        }
+        return result;
     }
 
     public static List<TypeCondition> get(List<String> keys) {

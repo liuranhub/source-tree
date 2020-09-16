@@ -10,7 +10,7 @@ public class Tree {
     private Map<Integer, TreeNode> cacheIndex = new HashMap<>();
 
     public Tree(TreeNode treeNode) {
-        root = TreeNodeFactory.create(treeNode);
+        root = treeNode;
         cacheIndex.put(root.getId(), root);
     }
 
@@ -37,6 +37,16 @@ public class Tree {
             node.setParent(parent);
         }
         cacheIndex.put(node.getId(), node);
+
+        if (node instanceof ChannelTreeNode) {
+            parent = node.getParent();
+            while (parent != null) {
+                if (parent instanceof OrgTreeNode) {
+                    ((OrgTreeNode) parent).addLeafTypes(node.getType());
+                }
+                parent = parent.getParent();
+            }
+        }
     }
 
     public void linkTree(Integer parentId, Tree subTree, boolean linkParent) {
@@ -64,31 +74,6 @@ public class Tree {
         TreeNode node = cacheIndex.get(id);
         if (node instanceof ChannelTreeNode) {
             ((ChannelTreeNode) node).setVideoRecord(videoRecordStatus);
-        }
-    }
-
-    public void updateNode(TreeNode node) {
-        TreeNode oldNode = cacheIndex.get(node.getId());
-        if (node instanceof OrgTreeNode) {
-            oldNode.setName(node.getName());
-        } else {
-            ChannelTreeNode con = (ChannelTreeNode)oldNode;
-            ChannelTreeNode cn = (ChannelTreeNode)node;
-
-            con.setCascaded(cn.getCascaded());
-            con.setCode(cn.getCode());
-            con.setStatus(cn.getStatus());
-            con.setName(cn.getName());
-            con.setType(cn.getType());
-            con.setSubType(cn.getSubType());
-        }
-    }
-
-    public void deleteNode(int id){
-        TreeNode node = cacheIndex.get(id);
-        if (node != null) {
-            node.getParent().getChildren().remove(node);
-            node.setParent(null);
         }
     }
 

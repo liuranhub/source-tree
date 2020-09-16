@@ -1,10 +1,22 @@
 package com.unisinsight.lazytree.cache.tree;
 
+import com.unisinsight.lazytree.cache.condition.TypeCondition;
 import com.unisinsight.lazytree.model.ResourceTreeModel;
 import org.springframework.beans.BeanUtils;
 import org.springframework.util.StringUtils;
 
 public class TreeNodeFactory {
+
+    public static TreeNode createSimpleNode(TreeNode node) {
+        TreeNode treeNode = create(node);
+        treeNode.setSum(null);
+        if (treeNode instanceof OrgTreeNode) {
+            ((OrgTreeNode) treeNode).setLeafTypes(null);
+            treeNode.setType(null);
+        }
+
+        return treeNode;
+    }
 
     public static TreeNode create(TreeNode node) {
         TreeNode treeNode;
@@ -41,12 +53,7 @@ public class TreeNodeFactory {
         }
         treeNode.setId(node.getId());
         treeNode.setName(node.getResourceName());
-        treeNode.setType(Integer.parseInt(node.getType()));
-        treeNode.setSum(node.getChildNum());
-
-        if (!StringUtils.isEmpty(node.getSubType())){
-            treeNode.setSubType(Integer.parseInt(node.getSubType()));
-        }
+        treeNode.setType(TypeCondition.get(node.getType(), node.getSubType()));
 
         return treeNode;
     }

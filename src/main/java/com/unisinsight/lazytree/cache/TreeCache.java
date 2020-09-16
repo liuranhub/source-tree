@@ -1,22 +1,38 @@
 package com.unisinsight.lazytree.cache;
 
 import com.unisinsight.lazytree.cache.condition.*;
-import com.unisinsight.lazytree.cache.tree.Tree;
-import com.unisinsight.lazytree.cache.tree.TreeNode;
-import com.unisinsight.lazytree.cache.tree.TreeNodeFactory;
+import com.unisinsight.lazytree.cache.tree.*;
+import com.unisinsight.lazytree.exception.OutOfMaxsizeException;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.support.PropertiesLoaderUtils;
 import org.springframework.util.CollectionUtils;
 
-import java.util.List;
+import java.io.IOException;
+import java.util.*;
 
 public class TreeCache {
     private static ThreadLocal<Integer> currentThreadLeafCount = new ThreadLocal<>();
 
     private static Tree TREE;
 
-    private static final Integer LAZY_TREE_MAXSIZE = 5;
+    private static Integer LAZY_TREE_MAXSIZE = 3000;
+
+    static {
+        try {
+            Properties properties = PropertiesLoaderUtils.loadProperties(
+                    new ClassPathResource("application.properties"));
+            String maxSize = properties.getProperty("lazytree.maxsize");
+            if(maxSize != null) {
+                LAZY_TREE_MAXSIZE = Integer.parseInt(maxSize);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
 
     public static void init(TreeNode root) {
-        TREE = new Tree(root);
+        TREE = new Tree(TreeNodeFactory.create(root));
     }
 
     public static void addNode(Integer parentId, TreeNode node){
@@ -31,15 +47,33 @@ public class TreeCache {
         TREE.updateTaskStatus(nodeId, status);
     }
 
-    public static TreeNode getRoot() {
-        return getChildren(TREE.getRoot().getId(), 1);
+    public static TreeNode getRoot(List<TypeCondition> includes) {
+        return getChildren(TREE.getRoot().getId(), includes);
     }
 
-    public static TreeNode getChildren(Integer id, Integer depth) {
+    public static TreeNode getChildren(Integer id, List<TypeCondition> includes) {
         TreeNode node = TREE.get(id);
         TreeNode result = TreeNodeFactory.create(node);
-        result.setChildren(TREE.getChildren(id));
+        List<TreeNode> children = new ArrayList<>();
 
+        for (TreeNode child : node.getChildren()) {
+            if (accordConditionLeafType(includes, child)) {
+                TreeNode target = TreeNodeFactory.create(child);
+
+                int sum = 0;
+                if (!CollectionUtils.isEmpty(child.getChildren())) {
+                    for (TreeNode n : child.getChildren()) {
+                        if (accordConditionLeafType(includes, n)) {
+                            sum ++;
+                        }
+                    }
+                }
+                target.setSum(sum);
+                children.add(target);
+            }
+        }
+        result.setSum(children.size());
+        result.setChildren(children);
         return result;
     }
 
@@ -55,10 +89,10 @@ public class TreeCache {
             if (newTree != null  && (newTree.contain(nodeId) || currentNode == null)) {
                 continue;
             }
-            Tree subTree = new Tree(currentNode);
+            Tree subTree = new Tree(TreeNodeFactory.createSimpleNode(currentNode));
             // 非叶子节点，判断是否可以生成子树
             if (new OrgNodeCondition().accord(currentNode)) {
-                // 想下生成子孙节点
+                // 向下生成子孙节点
                 boolean haveChild = downBuildSubTree(subTree, currentNode, conditions);
                 if (!haveChild) {
                     continue;
@@ -81,7 +115,7 @@ public class TreeCache {
                     break;
                 } else {
                     // 创建父节点
-                    newRoot = TreeNodeFactory.create(parent);
+                    newRoot = TreeNodeFactory.createSimpleNode(parent);
                     subTree.exchangeRoot(newRoot, false);
                 }
                 currentNode = parent;
@@ -99,7 +133,7 @@ public class TreeCache {
 
     private static boolean accordCondition(List<Condition> conditions, TreeNode target) {
         if (currentThreadLeafCount.get() > LAZY_TREE_MAXSIZE) {
-            throw new RuntimeException("超过个数");
+            throw new OutOfMaxsizeException("超过最大限制个数");
         }
         // condition为空默认不做条件限制
         if (CollectionUtils.isEmpty(conditions)) {
@@ -121,8 +155,23 @@ public class TreeCache {
         return accordConditionType(conditions, target);
     }
 
-    private static boolean accordConditionType(List<Condition> conditions, TreeNode target) {
+    private static boolean accordConditionLeafType(List<TypeCondition> conditions, TreeNode target) {
+        if (CollectionUtils.isEmpty(conditions)) {
+            return true;
+        }
+        if (target instanceof ChannelTreeNode) {
+            return conditions.contains(target.getType());
+        } else if (target instanceof OrgTreeNode) {
+            for (TypeCondition condition : conditions) {
+                if (((OrgTreeNode) target).getLeafTypes().contains(condition)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 
+    private static boolean accordConditionType(List<Condition> conditions, TreeNode target) {
         int typeConditionSize = 0;
         for (Condition condition : conditions) {
             if (condition instanceof TypeCondition) {
@@ -158,7 +207,7 @@ public class TreeCache {
         if (!CollectionUtils.isEmpty(currentNode.getChildren())) {
             boolean haveChild = false;
             for (TreeNode node : currentNode.getChildren()) {
-                Tree subTree = new Tree(TreeNodeFactory.create(node));
+                Tree subTree = new Tree(TreeNodeFactory.createSimpleNode(node));
                 boolean success = downBuildSubTree(subTree,  node, includes);
                 if (success) {
                     tree.linkTree(currentNode.getId(),  subTree, false);

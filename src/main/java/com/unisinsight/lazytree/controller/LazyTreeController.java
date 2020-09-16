@@ -26,13 +26,23 @@ public class LazyTreeController {
     private FrameworkResourceService frs;
 
     @GetMapping(value = "/{id}/children")
-    public TreeNode getChildren(@PathVariable Integer id){
-        return TreeCache.getChildren(id, 1);
+    public TreeNode getChildren(@PathVariable Integer id, @RequestParam(required = false) List<String> types){
+        List<TypeCondition> include = new ArrayList<>();
+        if (types != null) {
+            include.addAll(TypeCondition.get(types));
+        }
+        return TreeCache.getChildren(id, include);
     }
 
     @GetMapping(value = "/root/children")
-    public TreeNode getChildren(){
-        return TreeCache.getRoot();
+    public TreeNode getChildren( @RequestParam(required = false) List<String> types){
+
+        List<TypeCondition> include = new ArrayList<>();
+        if (types != null) {
+            include.addAll(TypeCondition.get(types));
+        }
+
+        return TreeCache.getRoot(include);
     }
 
     @PostMapping(value = "/select-tree")
@@ -51,10 +61,6 @@ public class LazyTreeController {
         if (req.isVideoRecord()) {
             conditions.add(new VideoRecordCondition());
         }
-
-//        if (!req.isHaveTask()) {
-//            conditions.add(new HaveTaskCondition());
-//        }
 
         Tree tree = TreeCache.buildSubTree(req.getInclude().getIds(), conditions);
 

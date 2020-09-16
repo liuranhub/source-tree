@@ -1,6 +1,7 @@
 package com.unisinsight.lazytree.cache.tree;
 
 
+import com.unisinsight.lazytree.cache.condition.TypeCondition;
 import lombok.Data;
 import org.springframework.util.CollectionUtils;
 
@@ -9,12 +10,11 @@ import java.util.List;
 
 @Data
 public class TreeNode {
-    private int id;
+    private Integer id;
     private String name;
-    private int type;
-    private int subType;
+    private TypeCondition type;
     private TreeNode parent;
-    private int sum;
+    private Integer sum;
     private List<TreeNode> children;
 
     public boolean leafNode(){
