@@ -1,4 +1,4 @@
-package com.unisinsight.tree;
+package com.unisinsight.lazytree;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
