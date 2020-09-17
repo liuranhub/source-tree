@@ -2,6 +2,7 @@ package com.unisinsight.lazytree.cache;
 
 import com.unisinsight.lazytree.cache.condition.*;
 import com.unisinsight.lazytree.cache.tree.*;
+import com.unisinsight.lazytree.config.Constant;
 import com.unisinsight.lazytree.exception.OutOfMaxsizeException;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.support.PropertiesLoaderUtils;
@@ -15,21 +16,6 @@ public class TreeCache {
 
     private static Tree TREE;
 
-    private static Integer LAZY_TREE_MAXSIZE = 3000;
-
-    static {
-        try {
-            Properties properties = PropertiesLoaderUtils.loadProperties(
-                    new ClassPathResource("application.properties"));
-            String maxSize = properties.getProperty("lazytree.maxsize");
-            if(maxSize != null) {
-                LAZY_TREE_MAXSIZE = Integer.parseInt(maxSize);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
 
     public static void init(TreeNode root) {
         TREE = new Tree(TreeNodeFactory.create(root));
@@ -39,12 +25,12 @@ public class TreeCache {
         TREE.addNode(parentId, node, true);
     }
 
-    public static void updateVideoRecord(Integer nodeId, Integer status) {
-        TREE.updateVideoRecordStatus(nodeId, status);
+    public static void updateVideoRecord(String code, Integer status) {
+        TREE.updateVideoRecordStatus(code, status);
     }
 
-    public static void updateHaveTask(Integer nodeId, Integer status){
-        TREE.updateTaskStatus(nodeId, status);
+    public static void updateHaveTask(String code, Integer status){
+        TREE.updateTaskStatus(code, status);
     }
 
     public static TreeNode getRoot(List<TypeCondition> includes) {
@@ -132,7 +118,7 @@ public class TreeCache {
     }
 
     private static boolean accordCondition(List<Condition> conditions, TreeNode target) {
-        if (currentThreadLeafCount.get() > LAZY_TREE_MAXSIZE) {
+        if (currentThreadLeafCount.get() > Constant.LAZY_TREE_MAXSIZE) {
             throw new OutOfMaxsizeException("超过最大限制个数");
         }
         // condition为空默认不做条件限制

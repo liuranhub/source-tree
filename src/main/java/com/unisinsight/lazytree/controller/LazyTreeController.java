@@ -67,14 +67,14 @@ public class LazyTreeController {
         return tree == null ? new TreeNode() : tree.getRoot();
     }
 
-    @PostMapping(value = "/{id}/videoRecord/{status}")
-    public void updateVideoRecord(@PathVariable Integer id, @PathVariable Integer status){
-        TreeCache.updateVideoRecord(id, status);
+    @PostMapping(value = "/{code}/videoRecord/{status}")
+    public void updateVideoRecord(@PathVariable String code, @PathVariable Integer status){
+        TreeCache.updateVideoRecord(code, status);
     }
 
-    @PostMapping(value = "/{id}/haveTask/{status}")
-    public void updateHaveTask(@PathVariable Integer id, @PathVariable Integer status){
-        TreeCache.updateHaveTask(id, status);
+    @PostMapping(value = "/{code}/haveTask/{status}")
+    public void updateHaveTask(@PathVariable String code, @PathVariable Integer status){
+        TreeCache.updateHaveTask(code, status);
     }
 
     @PostConstruct

@@ -8,6 +8,7 @@ import java.util.Map;
 public class Tree {
     private TreeNode root;
     private Map<Integer, TreeNode> cacheIndex = new HashMap<>();
+    private Map<String, TreeNode> codeIndex = new HashMap<>();
 
     public Tree(TreeNode treeNode) {
         root = treeNode;
@@ -38,7 +39,9 @@ public class Tree {
         }
         cacheIndex.put(node.getId(), node);
 
+        // 更新夫节点LeafTypes类型
         if (node instanceof ChannelTreeNode) {
+            codeIndex.put(((ChannelTreeNode) node).getCode(),  node);
             parent = node.getParent();
             while (parent != null) {
                 if (parent instanceof OrgTreeNode) {
@@ -52,6 +55,7 @@ public class Tree {
     public void linkTree(Integer parentId, Tree subTree, boolean linkParent) {
         addNode(parentId, subTree.getRoot(), linkParent);
         cacheIndex.putAll(subTree.cacheIndex);
+        codeIndex.putAll(subTree.codeIndex);
     }
 
     public void exchangeRoot(TreeNode newRoot, boolean linkParent) {
@@ -63,15 +67,21 @@ public class Tree {
         cacheIndex.put(newRoot.getId(), root);
     }
 
-    public void updateTaskStatus(Integer id, Integer taskStatus){
-        TreeNode node = cacheIndex.get(id);
+    public void updateTaskStatus(String code, Integer taskStatus){
+        TreeNode node = codeIndex.get(code);
+        if (node == null) {
+            return;
+        }
         if (node instanceof ChannelTreeNode) {
             ((ChannelTreeNode) node).setHaveTask(taskStatus);
         }
     }
 
-    public void updateVideoRecordStatus(Integer id, Integer videoRecordStatus) {
-        TreeNode node = cacheIndex.get(id);
+    public void updateVideoRecordStatus(String code, Integer videoRecordStatus) {
+        TreeNode node = codeIndex.get(code);
+        if (node == null) {
+            return;
+        }
         if (node instanceof ChannelTreeNode) {
             ((ChannelTreeNode) node).setVideoRecord(videoRecordStatus);
         }
