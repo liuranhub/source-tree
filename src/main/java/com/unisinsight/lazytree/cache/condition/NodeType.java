@@ -8,26 +8,36 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public enum TypeCondition implements Condition{
-    CHANNEL_1(6, 1),CHANNEL_4(6, 4),CHANNEL_8(6,8),UNKNOW(0, 0), ORG(0) ;
+public enum NodeType implements Condition{
+    CHANNEL_1(6, 1),
+    CHANNEL_4(6, 4),
+    CHANNEL_5(6, 5),
+    CHANNEL_8(6, 8),
+    TOLLGATE_FACE(5, 1),
+    TOLLGATE_CAR(5, 2),
+    ENTRANCE_GUARD(13, 1),
+    COLLECT_DEVICE(20, 1),
+    DEVICE(1, 0),
+    UNKNOW(-1),
+    ORG(0) ;
 
     private Integer type;
     private Integer subType;
 
-    private static Map<String, TypeCondition> map ;
+    private static Map<String, NodeType> map ;
     static {
         map = new HashMap<>(values().length);
-        for (TypeCondition type : values()) {
+        for (NodeType type : values()) {
             map.put(type.toString(), type);
         }
     }
 
 
-    private TypeCondition(int type){
+    private NodeType(int type){
         this.type = type;
     }
 
-    private TypeCondition(int type, int subType) {
+    private NodeType(int type, int subType) {
         this(type);
         this.subType = subType;
     }
@@ -42,10 +52,10 @@ public enum TypeCondition implements Condition{
 
     @Override
     public boolean accord(TreeNode treeNode) {
-        return this.equals(treeNode.getType());
+        return this.equals(treeNode.getNodeType());
     }
 
-    public static TypeCondition get(String type, String subType) {
+    public static NodeType get(String type, String subType) {
         String key;
         if (subType == null) {
             key = "" + type;
@@ -53,18 +63,18 @@ public enum TypeCondition implements Condition{
             key = "" + type + "_" + subType;
         }
 
-        TypeCondition result = map.get(key);
+        NodeType result = map.get(key);
         if (result == null) {
             return UNKNOW;
         }
         return result;
     }
 
-    public static List<TypeCondition> get(List<String> keys) {
+    public static List<NodeType> get(List<String> keys) {
         if (CollectionUtils.isEmpty(keys)) {
             return new ArrayList<>();
         }
-        List<TypeCondition> list = new ArrayList<>(keys.size());
+        List<NodeType> list = new ArrayList<>(keys.size());
         for (String key : keys) {
             list.add(map.get(key));
         }

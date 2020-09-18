@@ -1,9 +1,8 @@
 package com.unisinsight.lazytree.cache.tree;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import com.unisinsight.lazytree.cache.condition.BizType;
+
+import java.util.*;
 
 public class Tree {
     private TreeNode root;
@@ -13,6 +12,12 @@ public class Tree {
     public Tree(TreeNode treeNode) {
         root = treeNode;
         cacheIndex.put(root.getId(), root);
+    }
+
+    public void clear(){
+        root = null;
+        cacheIndex.clear();
+        cacheIndex.clear();
     }
 
     public TreeNode getRoot() {
@@ -39,15 +44,33 @@ public class Tree {
         }
         cacheIndex.put(node.getId(), node);
 
-        // 更新夫节点LeafTypes类型
-        if (node instanceof ChannelTreeNode) {
-            codeIndex.put(((ChannelTreeNode) node).getCode(),  node);
-            parent = node.getParent();
-            while (parent != null) {
-                if (parent instanceof OrgTreeNode) {
-                    ((OrgTreeNode) parent).addLeafTypes(node.getType());
+        //FIXME 优化代码逻辑
+        if (linkParent) {
+            // 更新叶子节点数据
+            if (node instanceof ChannelTreeNode) {
+                codeIndex.put(((ChannelTreeNode) node).getCode(),  node);
+                if (node.getParent() != null && node.getParent().getParent() != null) {
+                    TreeNode tollgate = node.getParent().getParent();
+                    if (tollgate instanceof TollgateTreeNode) {
+                        ((ChannelTreeNode) node).setParentType(tollgate.getNodeType());
+                        ((ChannelTreeNode) node).setTcode(((TollgateTreeNode) tollgate).getCode());
+                    }
                 }
-                parent = parent.getParent();
+            }
+
+
+            Set<BizType> bizTypes = new HashSet<>();
+            bizTypes.add(BizType.common);
+            for (BizType bizType : BizType.values()) {
+                if (bizType.accord(node)) {
+                    bizTypes.add(bizType);
+                }
+            }
+
+            TreeNode currentNode = node;
+            while (currentNode != null) {
+                currentNode.getBizType().addAll(bizTypes);
+                currentNode = currentNode.getParent();
             }
         }
     }
@@ -67,13 +90,13 @@ public class Tree {
         cacheIndex.put(newRoot.getId(), root);
     }
 
-    public void updateTaskStatus(String code, Integer taskStatus){
+    public void updateTaskStatus(String code, Set<Integer> taskStatus){
         TreeNode node = codeIndex.get(code);
         if (node == null) {
             return;
         }
         if (node instanceof ChannelTreeNode) {
-            ((ChannelTreeNode) node).setHaveTask(taskStatus);
+            ((ChannelTreeNode) node).setTaskTypes(taskStatus);
         }
     }
 
@@ -85,18 +108,5 @@ public class Tree {
         if (node instanceof ChannelTreeNode) {
             ((ChannelTreeNode) node).setVideoRecord(videoRecordStatus);
         }
-    }
-
-    public List<TreeNode> getChildren(Integer id) {
-        TreeNode node = cacheIndex.get(id);
-        if (node == null) {
-            return new ArrayList<>();
-        }
-        List<TreeNode> result = new ArrayList<>(node.getChildren().size());
-        for (TreeNode child : node.getChildren()){
-            result.add(TreeNodeFactory.create(child));
-        }
-
-        return result;
     }
 }

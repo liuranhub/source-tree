@@ -1,6 +1,6 @@
 package com.unisinsight.lazytree.cache.tree;
 
-import com.unisinsight.lazytree.cache.condition.TypeCondition;
+import com.unisinsight.lazytree.cache.condition.NodeType;
 import com.unisinsight.lazytree.model.ResourceTreeModel;
 import org.springframework.beans.BeanUtils;
 import org.springframework.util.StringUtils;
@@ -10,11 +10,8 @@ public class TreeNodeFactory {
     public static TreeNode createSimpleNode(TreeNode node) {
         TreeNode treeNode = create(node);
         treeNode.setSum(null);
-        if (treeNode instanceof OrgTreeNode) {
-            ((OrgTreeNode) treeNode).setLeafTypes(null);
-            treeNode.setType(null);
-        }
-
+//        treeNode.setNodeType(null);
+        treeNode.setBizType(null);
         return treeNode;
     }
 
@@ -45,17 +42,25 @@ public class TreeNodeFactory {
                 ((ChannelTreeNode)treeNode).setCascaded(1);
             }
 
-            ((ChannelTreeNode)treeNode).setHaveTask(0);
+            ((ChannelTreeNode)treeNode).setTaskTypes(null);
             ((ChannelTreeNode)treeNode).setVideoRecord(0);
             ((ChannelTreeNode)treeNode).setStatus(Integer.parseInt(node.getStatus()));
-        } else {
+        } else if (isTollgate(node)) {
+            treeNode = new TollgateTreeNode();
+            ((TollgateTreeNode) treeNode).setCode(node.getResourceCode());
+        }
+        else {
             treeNode = new OrgTreeNode();
         }
         treeNode.setId(node.getId());
         treeNode.setName(node.getResourceName());
-        treeNode.setType(TypeCondition.get(node.getType(), node.getSubType()));
+        treeNode.setNodeType(NodeType.get(node.getType(), node.getSubType()));
 
         return treeNode;
+    }
+
+    private static boolean isTollgate(ResourceTreeModel.TreeNode node) {
+        return "5".equals(node.getType());
     }
 
     private static boolean isChannel(ResourceTreeModel.TreeNode node) {

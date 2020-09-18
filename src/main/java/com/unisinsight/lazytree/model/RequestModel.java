@@ -1,5 +1,6 @@
 package com.unisinsight.lazytree.model;
 
+import com.unisinsight.lazytree.cache.condition.BizType;
 import lombok.Data;
 
 import java.util.List;
@@ -8,8 +9,8 @@ import java.util.List;
 public class RequestModel {
 
     private Include include;
-    private boolean videoRecord;
-    private boolean haveTask;
+    // dufault、video、image、video_record
+    private BizType type = BizType.common;
 
     @Data
     public static class Include{

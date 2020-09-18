@@ -4,69 +4,167 @@ import com.unisinsight.lazytree.cache.condition.*;
 import com.unisinsight.lazytree.cache.tree.*;
 import com.unisinsight.lazytree.config.Constant;
 import com.unisinsight.lazytree.exception.OutOfMaxsizeException;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.support.PropertiesLoaderUtils;
+import com.unisinsight.lazytree.model.ResourceTreeModel;
+import com.unisinsight.lazytree.service.FrameworkResourceUtils;
 import org.springframework.util.CollectionUtils;
 
-import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TreeCache {
     private static ThreadLocal<Integer> currentThreadLeafCount = new ThreadLocal<>();
-
     private static Tree TREE;
+    private static Map<String, Set<Integer>> TASK = new HashMap<>();
+    private static Map<String, Integer> VIDEO_RECORD = new HashMap<>();
+    private static AtomicBoolean refreshing = new AtomicBoolean(false);
+    private static AtomicBoolean needRefresh = new AtomicBoolean(false);
+    private static Timer refreshTimer = new Timer();
 
+    public static void init(Map<String, Set<Integer>> taskStatus, Map<String, Integer> videoRecord){
+        // 初始化默认数据
+        if (!CollectionUtils.isEmpty(taskStatus)) {
+            TASK = taskStatus;
+        }
+        if (!CollectionUtils.isEmpty(videoRecord)){
+            VIDEO_RECORD = videoRecord;
+        }
 
-    public static void init(TreeNode root) {
-        TREE = new Tree(TreeNodeFactory.create(root));
+        // 刷新资源树
+        _refresh();
+
+        // 启动定时刷新任务
+        refreshTimer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                synchronized (TreeCache.class) {
+                    if (needRefresh.get()) {
+                        needRefresh.set(false);
+                        try{
+                            _refresh();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+        }, 10000, 10000);
     }
 
-    public static void addNode(Integer parentId, TreeNode node){
-        TREE.addNode(parentId, node, true);
+    public static void refresh(){
+        needRefresh.set(true);
+    }
+
+    private static void _refresh(){
+
+        if (!startRefreshing()){
+            return;
+        }
+
+        Tree newTree = load();
+        if (TREE != null) {
+            TREE.clear();
+        }
+        TREE = newTree;
+
+        endRefreshing();
+    }
+
+    private synchronized static boolean startRefreshing(){
+        if (refreshing.get()) {
+            return false;
+        }
+        refreshing.set(true);
+
+        return refreshing.get();
+    }
+
+    private synchronized static void endRefreshing(){
+        if (refreshing.get()) {
+            refreshing.set(false);
+        }
+    }
+
+    private static Tree load(){
+        long start  = System.currentTimeMillis();
+        ResourceTreeModel oldTree = FrameworkResourceUtils.getFullTree();
+
+        TreeNode root = TreeNodeFactory.create(oldTree.getData().get(0));
+        Tree tree = new Tree(root);
+
+        build(oldTree.getData().get(0), tree);
+        System.out.println("tree load time:" + (System.currentTimeMillis() - start));
+
+        for (Map.Entry<String, Set<Integer>> entry : TASK.entrySet()) {
+            tree.updateTaskStatus(entry.getKey(), entry.getValue());
+        }
+
+        for (Map.Entry<String, Integer> entry : VIDEO_RECORD.entrySet()) {
+            tree.updateVideoRecordStatus(entry.getKey(), entry.getValue());
+        }
+
+        return tree;
+    }
+
+    private static void build(ResourceTreeModel.TreeNode node, Tree tree){
+
+        if (CollectionUtils.isEmpty(node.getChild())) {
+            return;
+        }
+
+        for (ResourceTreeModel.TreeNode child : node.getChild()) {
+            TreeNode newNode = TreeNodeFactory.create(child);
+            tree.addNode(node.getId(), newNode, true);
+            build(child, tree);
+        }
     }
 
     public static void updateVideoRecord(String code, Integer status) {
         TREE.updateVideoRecordStatus(code, status);
+        VIDEO_RECORD.put(code, status);
     }
 
-    public static void updateHaveTask(String code, Integer status){
-        TREE.updateTaskStatus(code, status);
+    public static void updateTaskStatus(String code, Set<Integer> taskStatus){
+        TREE.updateTaskStatus(code, taskStatus);
+        TASK.put(code, taskStatus);
     }
 
-    public static TreeNode getRoot(List<TypeCondition> includes) {
-        return getChildren(TREE.getRoot().getId(), includes);
+    public static TreeNode getRoot(BizType condition) {
+        return getChildren(TREE.getRoot().getId(), condition);
     }
 
-    public static TreeNode getChildren(Integer id, List<TypeCondition> includes) {
+    public static TreeNode getChildren(Integer id, BizType condition) {
         TreeNode node = TREE.get(id);
         TreeNode result = TreeNodeFactory.create(node);
         List<TreeNode> children = new ArrayList<>();
 
-        for (TreeNode child : node.getChildren()) {
-            if (accordConditionLeafType(includes, child)) {
-                TreeNode target = TreeNodeFactory.create(child);
+        if (!CollectionUtils.isEmpty(node.getChildren())) {
+            for (TreeNode child : node.getChildren()) {
+                if (child.getBizType().contains(condition)) {
+                    TreeNode target = TreeNodeFactory.create(child);
 
-                int sum = 0;
-                if (!CollectionUtils.isEmpty(child.getChildren())) {
-                    for (TreeNode n : child.getChildren()) {
-                        if (accordConditionLeafType(includes, n)) {
-                            sum ++;
+                    int sum = 0;
+                    if (!CollectionUtils.isEmpty(child.getChildren())) {
+                        for (TreeNode n : child.getChildren()) {
+                            if (n.getBizType().contains(condition)) {
+                                sum ++;
+                            }
                         }
                     }
+                    target.setSum(sum);
+                    children.add(target);
                 }
-                target.setSum(sum);
-                children.add(target);
             }
+
+            result.setSum(children.size());
+            result.setChildren(children);
         }
-        result.setSum(children.size());
-        result.setChildren(children);
         return result;
     }
 
     /**
      * 通过给定节点ID生成子树，且字数包含根节点
      * */
-    public static Tree buildSubTree(List<Integer> nodeIds, List<Condition> conditions){
+    public static Tree buildSubTree(List<Integer> nodeIds, BizType condition){
         currentThreadLeafCount.set(0);
         Tree newTree = null;
         for (Integer nodeId : nodeIds) {
@@ -79,13 +177,13 @@ public class TreeCache {
             // 非叶子节点，判断是否可以生成子树
             if (new OrgNodeCondition().accord(currentNode)) {
                 // 向下生成子孙节点
-                boolean haveChild = downBuildSubTree(subTree, currentNode, conditions);
+                boolean haveChild = downBuildSubTree(subTree, currentNode, condition);
                 if (!haveChild) {
                     continue;
                 }
             }
             // 叶子节点，判断是否满足条件
-            else if (!accordCondition(conditions, subTree.getRoot())){
+            else if (!accordCondition(condition, subTree.getRoot())){
                 continue;
             }
             // 向上生成父节点
@@ -117,84 +215,45 @@ public class TreeCache {
         return newTree;
     }
 
-    private static boolean accordCondition(List<Condition> conditions, TreeNode target) {
+    private static boolean accordCondition(BizType condition, TreeNode target) {
+        if (!(target instanceof ChannelTreeNode)) {
+            return true;
+        }
+
         if (currentThreadLeafCount.get() > Constant.LAZY_TREE_MAXSIZE) {
             throw new OutOfMaxsizeException("超过最大限制个数");
         }
+
+        // 有实时图片流任务返回false
+        if (condition.equals(BizType.image) && TaskTypeCondition.image.accord(target)){
+            return false;
+        }
+
+        // 有实时视频流任务返回false
+        if (condition.equals(BizType.video) && TaskTypeCondition.video.accord(target)){
+            return false;
+        }
+
+        // 没有录像任务返回false
+        if (condition.equals(BizType.video_record) && !TaskTypeCondition.video_record.accord(target)){
+            return false;
+        }
+
         // condition为空默认不做条件限制
-        if (CollectionUtils.isEmpty(conditions)) {
+        if (target.getBizType().contains(condition)) {
             currentThreadLeafCount.set(currentThreadLeafCount.get() + 1);
             return true;
         }
 
-        // 判断录像
-        if (accordConditionHaveTask(conditions, target)){
-            return false;
-        }
-
-        // 判断解析任务
-        if (!accordConditionVideoRecord(conditions, target)) {
-            return false;
-        }
-
-
-        return accordConditionType(conditions, target);
-    }
-
-    private static boolean accordConditionLeafType(List<TypeCondition> conditions, TreeNode target) {
-        if (CollectionUtils.isEmpty(conditions)) {
-            return true;
-        }
-        if (target instanceof ChannelTreeNode) {
-            return conditions.contains(target.getType());
-        } else if (target instanceof OrgTreeNode) {
-            for (TypeCondition condition : conditions) {
-                if (((OrgTreeNode) target).getLeafTypes().contains(condition)) {
-                    return true;
-                }
-            }
-        }
         return false;
     }
 
-    private static boolean accordConditionType(List<Condition> conditions, TreeNode target) {
-        int typeConditionSize = 0;
-        for (Condition condition : conditions) {
-            if (condition instanceof TypeCondition) {
-                typeConditionSize ++;
-                if (condition.accord(target)) {
-                    currentThreadLeafCount.set(currentThreadLeafCount.get() + 1);
-                    return true;
-                }
-            }
-        }
-        return typeConditionSize == 0;
-    }
-
-    private static boolean accordConditionVideoRecord(List<Condition> conditions, TreeNode target) {
-        for (Condition condition : conditions) {
-            if (condition instanceof VideoRecordCondition ) {
-                return condition.accord(target);
-            }
-        }
-        return true;
-    }
-
-    private static boolean accordConditionHaveTask(List<Condition> conditions, TreeNode target) {
-        for (Condition condition : conditions) {
-            if (condition instanceof HaveTaskCondition){
-                return condition.accord(target);
-            }
-        }
-        return false;
-    }
-
-    private static boolean downBuildSubTree(Tree tree, TreeNode currentNode, List<Condition> includes){
+    private static boolean downBuildSubTree(Tree tree, TreeNode currentNode, BizType condition){
         if (!CollectionUtils.isEmpty(currentNode.getChildren())) {
             boolean haveChild = false;
             for (TreeNode node : currentNode.getChildren()) {
                 Tree subTree = new Tree(TreeNodeFactory.createSimpleNode(node));
-                boolean success = downBuildSubTree(subTree,  node, includes);
+                boolean success = downBuildSubTree(subTree,  node, condition);
                 if (success) {
                     tree.linkTree(currentNode.getId(),  subTree, false);
                     haveChild = true;
@@ -202,7 +261,7 @@ public class TreeCache {
             }
             return haveChild;
         } else {
-            return accordCondition(includes, currentNode);
+            return accordCondition(condition, currentNode);
         }
     }
 }

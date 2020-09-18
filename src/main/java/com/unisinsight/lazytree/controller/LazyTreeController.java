@@ -1,48 +1,30 @@
 package com.unisinsight.lazytree.controller;
 
 import com.unisinsight.lazytree.cache.TreeCache;
-import com.unisinsight.lazytree.cache.condition.Condition;
-import com.unisinsight.lazytree.cache.condition.TypeCondition;
-import com.unisinsight.lazytree.cache.condition.VideoRecordCondition;
+import com.unisinsight.lazytree.cache.condition.BizType;
 import com.unisinsight.lazytree.cache.tree.Tree;
 import com.unisinsight.lazytree.cache.tree.TreeNode;
-import com.unisinsight.lazytree.cache.tree.TreeNodeFactory;
 import com.unisinsight.lazytree.model.RequestModel;
-import com.unisinsight.lazytree.model.ResourceTreeModel;
-import com.unisinsight.lazytree.service.FrameworkResourceService;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/v1/lazy-tree")
 public class LazyTreeController {
 
-    @Resource
-    private FrameworkResourceService frs;
-
     @GetMapping(value = "/{id}/children")
-    public TreeNode getChildren(@PathVariable Integer id, @RequestParam(required = false) List<String> types){
-        List<TypeCondition> include = new ArrayList<>();
-        if (types != null) {
-            include.addAll(TypeCondition.get(types));
-        }
-        return TreeCache.getChildren(id, include);
+    public TreeNode getChildren(@PathVariable Integer id,
+                                @RequestParam(required = false, defaultValue = "common") BizType type){
+        return TreeCache.getChildren(id, type);
     }
 
     @GetMapping(value = "/root/children")
-    public TreeNode getChildren( @RequestParam(required = false) List<String> types){
-
-        List<TypeCondition> include = new ArrayList<>();
-        if (types != null) {
-            include.addAll(TypeCondition.get(types));
-        }
-
-        return TreeCache.getRoot(include);
+    public TreeNode getChildren(@RequestParam(required = false, defaultValue = "common") BizType type){
+        return TreeCache.getRoot(type);
     }
 
     @PostMapping(value = "/select-tree")
@@ -51,18 +33,7 @@ public class LazyTreeController {
         if (CollectionUtils.isEmpty(req.getInclude().getIds())) {
             return null;
         }
-
-        List<Condition> conditions = new ArrayList<>();
-
-        if (!CollectionUtils.isEmpty(req.getInclude().getTypes())) {
-            conditions.addAll(TypeCondition.get(req.getInclude().getTypes()));
-        }
-
-        if (req.isVideoRecord()) {
-            conditions.add(new VideoRecordCondition());
-        }
-
-        Tree tree = TreeCache.buildSubTree(req.getInclude().getIds(), conditions);
+        Tree tree = TreeCache.buildSubTree(req.getInclude().getIds(), req.getType());
 
         return tree == null ? new TreeNode() : tree.getRoot();
     }
@@ -74,29 +45,18 @@ public class LazyTreeController {
 
     @PostMapping(value = "/{code}/haveTask/{status}")
     public void updateHaveTask(@PathVariable String code, @PathVariable Integer status){
-        TreeCache.updateHaveTask(code, status);
+        Set<Integer> tasks = new HashSet<>();
+        tasks.add(status);
+        TreeCache.updateTaskStatus(code, tasks);
+    }
+
+    @PostMapping(value = "refresh")
+    public void refresh(){
+        TreeCache.refresh();
     }
 
     @PostConstruct
     public void test(){
-        ResourceTreeModel oldTree = frs.getFullTree();
-
-        TreeNode root = TreeNodeFactory.create(oldTree.getData().get(0));
-        TreeCache.init(root);
-
-        build(oldTree.getData().get(0));
-    }
-
-    private void build(ResourceTreeModel.TreeNode node){
-
-        if (CollectionUtils.isEmpty(node.getChild())) {
-            return;
-        }
-
-        for (ResourceTreeModel.TreeNode child : node.getChild()) {
-            TreeNode newNode = TreeNodeFactory.create(child);
-            TreeCache.addNode(node.getId(), newNode);
-            build(child);
-        }
+        TreeCache.init(null, null);
     }
 }
