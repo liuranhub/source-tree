@@ -6,12 +6,17 @@ import com.unisinsight.lazytree.config.Constant;
 import com.unisinsight.lazytree.exception.OutOfMaxsizeException;
 import com.unisinsight.lazytree.model.ResourceTreeModel;
 import com.unisinsight.lazytree.service.FrameworkResourceUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.CollectionUtils;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TreeCache {
+
+    private static Logger LOG = LoggerFactory.getLogger(TreeCache.class);
+
     private static ThreadLocal<Integer> currentThreadLeafCount = new ThreadLocal<>();
     private static Tree TREE;
     private static Map<String, Set<Integer>> TASK = new HashMap<>();
@@ -46,14 +51,10 @@ public class TreeCache {
             @Override
             public void run() {
                 synchronized (TreeCache.class) {
-                    System.out.println(needRefresh.get());
+                    LOG.info("timer定时任务");
                     if (needRefresh.get()) {
                         needRefresh.set(false);
-                        try{
-                            _refresh();
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
+                        _refresh();
                     }
                 }
             }
@@ -61,20 +62,25 @@ public class TreeCache {
     }
 
     public static void refresh(){
-        System.out.println("----------------");
         needRefresh.set(true);
-        System.out.println("-------" + needRefresh.get());
     }
 
-    private static void _refresh(){
+    private synchronized static void _refresh(){
+
+        LOG.info("开始刷新资源树");
 
         if (!startRefreshing()){
+            LOG.info("有线程正在刷新任务");
             return;
         }
-
-        TREE = load();
-
-        endRefreshing();
+        try {
+            TREE = load();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            LOG.info("属性资源树结束 treeId:{}", TREE.getTreeId());
+            endRefreshing();
+        }
     }
 
     private synchronized static boolean startRefreshing(){
@@ -114,6 +120,8 @@ public class TreeCache {
     }
 
     private static void build(ResourceTreeModel.TreeNode node, Tree tree){
+
+        Constant.testResourceCode(node.getId());
 
         if (CollectionUtils.isEmpty(node.getChild())) {
             return;
@@ -194,13 +202,17 @@ public class TreeCache {
             }
         }
 
-        return buildSubTree(ids, condition);
+        return buildSubTree(ids, condition, true);
+    }
+
+    public static Tree buildSubTreeById(List<Integer> nodeIds, BizType condition){
+        return buildSubTree(nodeIds, condition, false);
     }
 
     /**
      * 通过给定节点ID生成子树，且字数包含根节点
      * */
-    public static Tree buildSubTree(List<Integer> nodeIds, BizType condition){
+    public static Tree buildSubTree(List<Integer> nodeIds, BizType condition, boolean reshow){
         if (CollectionUtils.isEmpty(nodeIds)) {
             return null;
         }
@@ -216,13 +228,13 @@ public class TreeCache {
             // 非叶子节点，判断是否可以生成子树
             if (new OrgNodeCondition().accord(currentNode)) {
                 // 向下生成子孙节点
-                boolean haveChild = downBuildSubTree(subTree, currentNode, condition);
+                boolean haveChild = downBuildSubTree(subTree, currentNode, condition, reshow);
                 if (!haveChild) {
                     continue;
                 }
             }
             // 叶子节点，判断是否满足条件
-            else if (!accordCondition(condition, subTree.getRoot())){
+            else if (!accordCondition(condition, subTree.getRoot(), reshow)){
                 continue;
             }
             // 向上生成父节点
@@ -254,9 +266,13 @@ public class TreeCache {
         return newTree;
     }
 
-    private static boolean accordCondition(BizType condition, TreeNode target) {
+    private static boolean accordCondition(BizType condition, TreeNode target, boolean reshow) {
         if (!(target instanceof ChannelTreeNode)) {
             return false;
+        }
+
+        if (reshow) {
+            return true;
         }
 
         if (currentThreadLeafCount.get() > Constant.LAZY_TREE_MAXSIZE) {
@@ -287,12 +303,12 @@ public class TreeCache {
         return false;
     }
 
-    private static boolean downBuildSubTree(Tree tree, TreeNode currentNode, BizType condition){
+    private static boolean downBuildSubTree(Tree tree, TreeNode currentNode, BizType condition, boolean reshow){
         if (!CollectionUtils.isEmpty(currentNode.getChildren())) {
             boolean haveChild = false;
             for (TreeNode node : currentNode.getChildren()) {
                 Tree subTree = new Tree(TreeNodeFactory.createSimpleNode(node));
-                boolean success = downBuildSubTree(subTree,  node, condition);
+                boolean success = downBuildSubTree(subTree,  node, condition, reshow);
                 if (success) {
                     tree.linkTree(currentNode.getId(),  subTree, false);
                     haveChild = true;
@@ -300,7 +316,7 @@ public class TreeCache {
             }
             return haveChild;
         } else {
-            return accordCondition(condition, currentNode);
+            return accordCondition(condition, currentNode, reshow);
         }
     }
 }

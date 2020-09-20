@@ -1,15 +1,23 @@
 package com.unisinsight.lazytree.cache.tree;
 
+import com.unisinsight.lazytree.cache.TreeCache;
 import com.unisinsight.lazytree.cache.condition.BizType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
 public class Tree {
+
+    private static Logger LOG = LoggerFactory.getLogger(Tree.class);
+
+    private String treeId;
     private TreeNode root;
     private Map<Integer, TreeNode> cacheIndex = new HashMap<>();
     private Map<String, TreeNode> codeIndex = new HashMap<>();
 
     public Tree(TreeNode treeNode) {
+        treeId = UUID.randomUUID().toString();
         root = treeNode;
         cacheIndex.put(root.getId(), root);
     }
@@ -18,6 +26,10 @@ public class Tree {
         root = null;
         cacheIndex.clear();
         cacheIndex.clear();
+    }
+
+    public String getTreeId() {
+        return treeId;
     }
 
     public TreeNode getRoot() {
@@ -97,6 +109,7 @@ public class Tree {
     public void updateTaskStatus(String code, Set<Integer> taskStatus){
         TreeNode node = codeIndex.get(code);
         if (node == null) {
+            LOG.info("更新任务状态不存在 code:{}", code);
             return;
         }
         if (node instanceof ChannelTreeNode) {
@@ -107,6 +120,7 @@ public class Tree {
     public void updateVideoRecordStatus(String code, Integer videoRecordStatus) {
         TreeNode node = codeIndex.get(code);
         if (node == null) {
+            LOG.info("更新录像计划节点不存在 code:{} status:{}", code, videoRecordStatus);
             return;
         }
         if (node instanceof ChannelTreeNode) {

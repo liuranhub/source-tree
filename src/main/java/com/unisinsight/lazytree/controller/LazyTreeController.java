@@ -4,6 +4,7 @@ import com.unisinsight.lazytree.cache.TreeCache;
 import com.unisinsight.lazytree.cache.condition.BizType;
 import com.unisinsight.lazytree.cache.tree.Tree;
 import com.unisinsight.lazytree.cache.tree.TreeNode;
+import com.unisinsight.lazytree.config.Constant;
 import com.unisinsight.lazytree.model.RequestModel;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
@@ -32,7 +33,7 @@ public class LazyTreeController {
 
         Tree tree = null;
         if (!CollectionUtils.isEmpty(req.getInclude().getIds())){
-            tree = TreeCache.buildSubTree(req.getInclude().getIds(), req.getInclude().getType());
+            tree = TreeCache.buildSubTreeById(req.getInclude().getIds(), req.getInclude().getType());
         } else {
             tree = TreeCache.buildSubTreeByCode(req.getInclude().getCodes(), req.getInclude().getType());
         }
@@ -56,6 +57,12 @@ public class LazyTreeController {
     public void refresh(){
         TreeCache.refresh();
     }
+
+    @PostMapping(value = "testid/{id}")
+    public void testId(@PathVariable Integer id){
+        Constant.TEST_RESOURCE_ID = id;
+    }
+
 
 //    @PostConstruct
     public void test(){
