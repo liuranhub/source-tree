@@ -10,11 +10,11 @@ public class RequestModel {
 
     private Include include;
     // dufault、video、image、video_record
-    private BizType type = BizType.common;
 
     @Data
     public static class Include{
         List<Integer> ids;
-        List<String> types;
+        List<String> codes;
+        BizType type = BizType.common;
     }
 }

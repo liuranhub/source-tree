@@ -9,7 +9,7 @@ import java.util.Properties;
 
 public class Constant {
     public static String RESOURCE_TREE = "/api/infra-uuv/v0.1/resources/tree" +
-            "?identity=UDM&nodeType=6_1,6_4,6_8,13_1,20_1";
+            "?identity=UDM&type=6_1,6_4,6_8,13_1,20_1";
 //    public static String RESOURCE_TREE = "/api/infra-uuv/v0.1/resources/lazytree?identity=UDM&nodeType=6_1,6_4,6_8,13_1,20";
 
     public static String UUV_URL;

@@ -20,6 +20,15 @@ public class TreeCache {
     private static AtomicBoolean needRefresh = new AtomicBoolean(false);
     private static Timer refreshTimer = new Timer();
 
+    public static void _init(ResourceTreeModel.TreeNode root, List<ResourceTreeModel.TreeNode> nodes) {
+        Tree tree = new Tree(TreeNodeFactory.create(root));
+        for (ResourceTreeModel.TreeNode node : nodes) {
+            tree.addNode(node.getParentId(), TreeNodeFactory.create(node), true);
+        }
+
+        TREE = tree;
+    }
+
     public static void init(Map<String, Set<Integer>> taskStatus, Map<String, Integer> videoRecord){
         // 初始化默认数据
         if (!CollectionUtils.isEmpty(taskStatus)) {
@@ -37,6 +46,7 @@ public class TreeCache {
             @Override
             public void run() {
                 synchronized (TreeCache.class) {
+                    System.out.println(needRefresh.get());
                     if (needRefresh.get()) {
                         needRefresh.set(false);
                         try{
@@ -51,7 +61,9 @@ public class TreeCache {
     }
 
     public static void refresh(){
+        System.out.println("----------------");
         needRefresh.set(true);
+        System.out.println("-------" + needRefresh.get());
     }
 
     private static void _refresh(){
@@ -60,11 +72,7 @@ public class TreeCache {
             return;
         }
 
-        Tree newTree = load();
-        if (TREE != null) {
-            TREE.clear();
-        }
-        TREE = newTree;
+        TREE = load();
 
         endRefreshing();
     }
@@ -118,6 +126,14 @@ public class TreeCache {
         }
     }
 
+    public static TreeNode get(Integer id){
+        return TREE.get(id);
+    }
+
+    public static TreeNode get(String code){
+        return TREE.get(code);
+    }
+
     public static void updateVideoRecord(String code, Integer status) {
         TREE.updateVideoRecordStatus(code, status);
         VIDEO_RECORD.put(code, status);
@@ -134,6 +150,11 @@ public class TreeCache {
 
     public static TreeNode getChildren(Integer id, BizType condition) {
         TreeNode node = TREE.get(id);
+
+        if (node == null) {
+            return null;
+        }
+
         TreeNode result = TreeNodeFactory.create(node);
         List<TreeNode> children = new ArrayList<>();
 
@@ -161,10 +182,28 @@ public class TreeCache {
         return result;
     }
 
+    public static Tree buildSubTreeByCode(List<String> codes, BizType condition){
+        if (CollectionUtils.isEmpty(codes)){
+            return null;
+        }
+        List<Integer> ids = new ArrayList<>(codes.size());
+        for(String code : codes){
+            TreeNode node = TREE.get(code);
+            if (node != null) {
+                ids.add(node.getId());
+            }
+        }
+
+        return buildSubTree(ids, condition);
+    }
+
     /**
      * 通过给定节点ID生成子树，且字数包含根节点
      * */
     public static Tree buildSubTree(List<Integer> nodeIds, BizType condition){
+        if (CollectionUtils.isEmpty(nodeIds)) {
+            return null;
+        }
         currentThreadLeafCount.set(0);
         Tree newTree = null;
         for (Integer nodeId : nodeIds) {
@@ -217,7 +256,7 @@ public class TreeCache {
 
     private static boolean accordCondition(BizType condition, TreeNode target) {
         if (!(target instanceof ChannelTreeNode)) {
-            return true;
+            return false;
         }
 
         if (currentThreadLeafCount.get() > Constant.LAZY_TREE_MAXSIZE) {

@@ -30,10 +30,12 @@ public class LazyTreeController {
     @PostMapping(value = "/select-tree")
     public TreeNode build(@RequestBody RequestModel req){
 
-        if (CollectionUtils.isEmpty(req.getInclude().getIds())) {
-            return null;
+        Tree tree = null;
+        if (!CollectionUtils.isEmpty(req.getInclude().getIds())){
+            tree = TreeCache.buildSubTree(req.getInclude().getIds(), req.getInclude().getType());
+        } else {
+            tree = TreeCache.buildSubTreeByCode(req.getInclude().getCodes(), req.getInclude().getType());
         }
-        Tree tree = TreeCache.buildSubTree(req.getInclude().getIds(), req.getType());
 
         return tree == null ? new TreeNode() : tree.getRoot();
     }
@@ -55,7 +57,7 @@ public class LazyTreeController {
         TreeCache.refresh();
     }
 
-    @PostConstruct
+//    @PostConstruct
     public void test(){
         TreeCache.init(null, null);
     }

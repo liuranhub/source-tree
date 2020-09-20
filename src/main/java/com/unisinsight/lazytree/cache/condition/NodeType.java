@@ -17,7 +17,7 @@ public enum NodeType implements Condition{
     TOLLGATE_CAR(5, 2),
     ENTRANCE_GUARD(13, 1),
     COLLECT_DEVICE(20, 1),
-    DEVICE(1, 0),
+    DEVICE(1, 1),
     UNKNOW(-1),
     ORG(0) ;
 
@@ -32,6 +32,14 @@ public enum NodeType implements Condition{
         }
     }
 
+
+    public Integer getType() {
+        return type;
+    }
+
+    public Integer getSubType() {
+        return subType;
+    }
 
     private NodeType(int type){
         this.type = type;

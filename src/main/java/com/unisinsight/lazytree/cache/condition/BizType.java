@@ -52,7 +52,7 @@ public enum BizType implements Condition{
                     accord = true;
                 }
 
-                // 本级域设备
+                // 本级域设备 ???
                 if (NodeType.CHANNEL_5.equals(treeNode.getNodeType())
                     || NodeType.CHANNEL_4.equals(treeNode.getNodeType())
                     || NodeType.CHANNEL_8.equals(treeNode.getNodeType())){

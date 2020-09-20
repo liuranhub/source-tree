@@ -11,7 +11,7 @@ public class TreeNodeFactory {
         TreeNode treeNode = create(node);
         treeNode.setSum(null);
 //        treeNode.setNodeType(null);
-        treeNode.setBizType(null);
+//        treeNode.setBizType(null);
         return treeNode;
     }
 

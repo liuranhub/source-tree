@@ -24,6 +24,10 @@ public class Tree {
         return root;
     }
 
+    public TreeNode get(String code){
+        return codeIndex.get(code);
+    }
+
     public TreeNode get(Integer id) {
         return cacheIndex.get(id);
     }
