@@ -30,8 +30,8 @@ public class FrameworkResourceUtils {
         restTemplate.setInterceptors(interceptors);
 
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout(60);
-        factory.setReadTimeout(60);
+        factory.setConnectTimeout(60000);
+        factory.setReadTimeout(60000);
 
         restTemplate.setRequestFactory(factory);
     }

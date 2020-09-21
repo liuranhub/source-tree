@@ -115,14 +115,17 @@ public class TreeCache {
         TASK.put(code, taskStatus);
     }
 
-    public static TreeNode getRoot(BizType condition) {
+    public static TreeNode getRoot(BizType condition) throws NotInitException {
+        if (TREE == null) {
+            throw new NotInitException();
+        }
+
         return getChildren(TREE.getRoot().getId(), condition);
     }
 
-    public static TreeNode getChildren(Integer id, BizType condition) {
+    public static TreeNode getChildren(Integer id, BizType condition) throws NotInitException {
         if (TREE == null) {
-            LOG.info("资源树未初始化");
-            return null;
+            throw new NotInitException();
         }
 
         TreeNode node = TREE.get(id);
