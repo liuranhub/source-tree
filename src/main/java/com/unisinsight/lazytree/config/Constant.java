@@ -23,6 +23,8 @@ public class Constant {
 
     public static Integer LAZY_TREE_MAXSIZE = 3000;
 
+    public static Integer TIMER_DELAY_TIME = 30000;
+
     public static Integer TEST_RESOURCE_ID = null;
 
     public static void testResourceCode(Integer id){

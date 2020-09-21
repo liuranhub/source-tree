@@ -1,6 +1,5 @@
 package com.unisinsight.lazytree.cache.tree;
 
-import com.unisinsight.lazytree.cache.TreeCache;
 import com.unisinsight.lazytree.cache.condition.BizType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,7 +73,6 @@ public class Tree {
                 }
             }
 
-
             Set<BizType> bizTypes = new HashSet<>();
             bizTypes.add(BizType.common);
             for (BizType bizType : BizType.values()) {
@@ -109,7 +107,7 @@ public class Tree {
     public void updateTaskStatus(String code, Set<Integer> taskStatus){
         TreeNode node = codeIndex.get(code);
         if (node == null) {
-            LOG.info("更新任务状态不存在 code:{}", code);
+            LOG.info("更新任务类型节点不存在 code:{}", code);
             return;
         }
         if (node instanceof ChannelTreeNode) {

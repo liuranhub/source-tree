@@ -5,6 +5,7 @@ import com.unisinsight.lazytree.cache.condition.BizType;
 import com.unisinsight.lazytree.cache.tree.Tree;
 import com.unisinsight.lazytree.cache.tree.TreeNode;
 import com.unisinsight.lazytree.config.Constant;
+import com.unisinsight.lazytree.exception.NotInitException;
 import com.unisinsight.lazytree.model.RequestModel;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
@@ -55,7 +56,11 @@ public class LazyTreeController {
 
     @PostMapping(value = "refresh")
     public void refresh(){
-        TreeCache.refresh();
+        try {
+            TreeCache.refresh();
+        } catch (NotInitException e) {
+            e.printStackTrace();
+        }
     }
 
     @PostMapping(value = "testid/{id}")

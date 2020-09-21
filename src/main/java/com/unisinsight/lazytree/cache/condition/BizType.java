@@ -15,9 +15,9 @@ public enum BizType implements Condition{
     video(){
         @Override
         public boolean accord(TreeNode treeNode) {
-            if (NodeType.ENTRANCE_GUARD.accord(treeNode)) {
-                return false;
-            }
+//            if (NodeType.COLLECT_DEVICE.accord(treeNode)) {
+//                return false;
+//            }
             if (NodeType.CHANNEL_1.equals(treeNode.getNodeType())
                     || NodeType.CHANNEL_4.equals(treeNode.getNodeType())
                     || NodeType.CHANNEL_8.equals(treeNode.getNodeType())){
@@ -31,9 +31,22 @@ public enum BizType implements Condition{
         public boolean accord(TreeNode treeNode) {
             if (treeNode instanceof ChannelTreeNode) {
                 boolean accord = false;
-                // 卡扣设备
-                if (NodeType.TOLLGATE_CAR.equals(((ChannelTreeNode) treeNode).getParentType())
-                        || NodeType.TOLLGATE_FACE.equals(((ChannelTreeNode) treeNode).getParentType())) {
+
+//                // 卡扣设备，这两个条件和下面的重复
+//                if (NodeType.TOLLGATE_CAR.equals(((ChannelTreeNode) treeNode).getParentType())
+//                        || NodeType.TOLLGATE_FACE.equals(((ChannelTreeNode) treeNode).getParentType())) {
+//                    accord = true;
+//                }
+//
+//                // 门禁
+//                if (NodeType.ENTRANCE_GUARD.equals(treeNode.getNodeType())){
+//                    accord = true;
+//                }
+
+                // 本级域设备
+                if (NodeType.CHANNEL_5.equals(treeNode.getNodeType())
+                        || NodeType.CHANNEL_4.equals(treeNode.getNodeType())
+                        || NodeType.CHANNEL_8.equals(treeNode.getNodeType())){
                     accord = true;
                 }
 
@@ -42,20 +55,8 @@ public enum BizType implements Condition{
                     accord = true;
                 }
 
-                // 门禁
-                if (NodeType.ENTRANCE_GUARD.equals(treeNode.getNodeType())){
-                    accord = true;
-                }
-
                 // 下级级联上来的设备
                 if (new CascadedCondition().accord(treeNode)) {
-                    accord = true;
-                }
-
-                // 本级域设备 ???
-                if (NodeType.CHANNEL_5.equals(treeNode.getNodeType())
-                    || NodeType.CHANNEL_4.equals(treeNode.getNodeType())
-                    || NodeType.CHANNEL_8.equals(treeNode.getNodeType())){
                     accord = true;
                 }
                 return accord;

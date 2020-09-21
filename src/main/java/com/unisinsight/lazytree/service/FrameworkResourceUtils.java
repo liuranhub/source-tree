@@ -8,6 +8,7 @@ import com.unisinsight.lazytree.model.ResourceTreeModel;
 import org.springframework.http.*;
 import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -27,6 +28,12 @@ public class FrameworkResourceUtils {
         List<ClientHttpRequestInterceptor> interceptors = new ArrayList<>();
         interceptors.add(getDefaultInterceptor(Constant.USER_ADMIN, Constant.USER_ADMIN));
         restTemplate.setInterceptors(interceptors);
+
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(60);
+        factory.setReadTimeout(60);
+
+        restTemplate.setRequestFactory(factory);
     }
 
     public static ResourceTreeModel getFullTree(){
