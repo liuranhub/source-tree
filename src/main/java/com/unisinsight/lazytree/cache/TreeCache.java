@@ -151,14 +151,32 @@ public class TreeCache {
                         }
                     }
                     target.setSum(sum);
+                    target.setTotal(leafCount(target.getId(), condition));
                     children.add(target);
                 }
             }
 
             result.setSum(children.size());
             result.setChildren(children);
+            result.setTotal(leafCount(result.getId(), condition));
         }
         return result;
+    }
+
+    private static Integer leafCount(Integer id, BizType condition) {
+        int count = 0;
+        TreeNode currentNode = TREE.get(id);
+        if (!currentNode.getBizType().contains(condition)){
+            return 0;
+        }
+        if (CollectionUtils.isEmpty(currentNode.getChildren())) {
+            return 1;
+        }
+
+        for (TreeNode node : currentNode.getChildren()) {
+            count += leafCount(node.getId(), condition);
+        }
+        return count;
     }
 
     public static Tree buildSubTreeByCode(List<String> codes, BizType condition){

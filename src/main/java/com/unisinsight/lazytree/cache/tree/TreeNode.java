@@ -18,9 +18,10 @@ public class TreeNode {
     private NodeType nodeType;
     private TreeNode parent;
     private Integer sum;
+    private String path;
+    private Integer total;
     private List<TreeNode> children;
     private Set<BizType> bizType = new HashSet<>();
-
 
     public Integer getId() {
         return id;

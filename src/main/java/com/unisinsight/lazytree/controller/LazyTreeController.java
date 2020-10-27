@@ -21,12 +21,23 @@ public class LazyTreeController {
     @GetMapping(value = "/{id}/children")
     public TreeNode getChildren(@PathVariable Integer id,
                                 @RequestParam(required = false, defaultValue = "common") BizType type){
-        return TreeCache.getChildren(id, type);
+        try {
+            return TreeCache.getChildren(id, type);
+        } catch (NotInitException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     @GetMapping(value = "/root/children")
     public TreeNode getChildren(@RequestParam(required = false, defaultValue = "common") BizType type){
-        return TreeCache.getRoot(type);
+        try {
+            return TreeCache.getRoot(type);
+        } catch (NotInitException e) {
+            e.printStackTrace();
+        }
+
+        return null;
     }
 
     @PostMapping(value = "/select-tree")
@@ -69,7 +80,7 @@ public class LazyTreeController {
     }
 
 
-//    @PostConstruct
+    @PostMapping(value = "test/init")
     public void test(){
         TreeCache.init(null, null);
     }

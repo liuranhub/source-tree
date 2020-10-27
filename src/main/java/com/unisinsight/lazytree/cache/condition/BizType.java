@@ -68,10 +68,13 @@ public enum BizType implements Condition{
     video_record{
         @Override
         public boolean accord(TreeNode treeNode) {
-            if (NodeType.CHANNEL_1.equals(treeNode.getNodeType())
-                || NodeType.CHANNEL_4.equals(treeNode.getNodeType())
-                || NodeType.CHANNEL_8.equals(treeNode.getNodeType())){
-                return true;
+            if (treeNode instanceof ChannelTreeNode) {
+                if (NodeType.CHANNEL_1.equals(treeNode.getNodeType())
+                        || NodeType.CHANNEL_4.equals(treeNode.getNodeType())
+                        || NodeType.CHANNEL_8.equals(treeNode.getNodeType())){
+                    return ((ChannelTreeNode) treeNode).getVideoRecord() == 1;
+                }
+                return false;
             }
             return false;
         }

@@ -3,6 +3,7 @@ package com.unisinsight.lazytree.cache.tree;
 import com.unisinsight.lazytree.cache.condition.BizType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.CollectionUtils;
 
 import java.util.*;
 
@@ -13,7 +14,7 @@ public class Tree {
     private String treeId;
     private TreeNode root;
     private Map<Integer, TreeNode> cacheIndex = new HashMap<>();
-    private Map<String, TreeNode> codeIndex = new HashMap<>();
+    private Map<String, TreeNode> leafNodeIndex = new HashMap<>();
 
     public Tree(TreeNode treeNode) {
         treeId = UUID.randomUUID().toString();
@@ -36,7 +37,7 @@ public class Tree {
     }
 
     public TreeNode get(String code){
-        return codeIndex.get(code);
+        return leafNodeIndex.get(code);
     }
 
     public TreeNode get(Integer id) {
@@ -63,7 +64,7 @@ public class Tree {
         if (linkParent) {
             // 更新叶子节点数据
             if (node instanceof ChannelTreeNode) {
-                codeIndex.put(((ChannelTreeNode) node).getCode(),  node);
+                leafNodeIndex.put(((ChannelTreeNode) node).getCode(),  node);
                 if (node.getParent() != null && node.getParent().getParent() != null) {
                     TreeNode tollgate = node.getParent().getParent();
                     if (tollgate instanceof TollgateTreeNode) {
@@ -92,7 +93,7 @@ public class Tree {
     public void linkTree(Integer parentId, Tree subTree, boolean linkParent) {
         addNode(parentId, subTree.getRoot(), linkParent);
         cacheIndex.putAll(subTree.cacheIndex);
-        codeIndex.putAll(subTree.codeIndex);
+        leafNodeIndex.putAll(subTree.leafNodeIndex);
     }
 
     public void exchangeRoot(TreeNode newRoot, boolean linkParent) {
@@ -105,7 +106,7 @@ public class Tree {
     }
 
     public void updateTaskStatus(String code, Set<Integer> taskStatus){
-        TreeNode node = codeIndex.get(code);
+        TreeNode node = leafNodeIndex.get(code);
         if (node == null) {
             LOG.info("更新任务类型节点不存在 code:{}", code);
             return;
@@ -116,7 +117,8 @@ public class Tree {
     }
 
     public void updateVideoRecordStatus(String code, Integer videoRecordStatus) {
-        TreeNode node = codeIndex.get(code);
+        TreeNode node = leafNodeIndex.get(code);
+        updateParentVideoRecord(node, videoRecordStatus == 1);
         if (node == null) {
             LOG.info("更新录像计划节点不存在 code:{} status:{}", code, videoRecordStatus);
             return;
@@ -125,4 +127,28 @@ public class Tree {
             ((ChannelTreeNode) node).setVideoRecord(videoRecordStatus);
         }
     }
+
+    private void updateParentVideoRecord(TreeNode node, boolean isAdd) {
+        TreeNode currentNode = node;
+        while (currentNode != null) {
+            if (isAdd) {
+                if (currentNode.getBizType().contains(BizType.video_record)) {
+                    return;
+                }
+                currentNode.getBizType().add(BizType.video_record);
+            } else {
+                if (!CollectionUtils.isEmpty(currentNode.getChildren())) {
+                    for (TreeNode child : currentNode.getChildren()) {
+                        if (child.getBizType().contains(BizType.video_record)) {
+                            return;
+                        }
+                    }
+                }
+
+                currentNode.getBizType().remove(BizType.video_record);
+            }
+            currentNode = currentNode.getParent();
+        }
+    }
+
 }

@@ -25,5 +25,6 @@ public class ResourceTreeModel {
         private String resourceCode;
         private int childNum;
         private List<TreeNode> child;
+        private String path;
     }
 }

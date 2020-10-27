@@ -116,26 +116,26 @@ public class TestTreeCache {
 
 //    @Test
     public void testGetChildrenCommon(){
-        List<Integer> target = target(11, 12, 13, 14, 15, 16);
-
-        assert TreeCache.getRoot(BizType.common) != null;
-
-        //测试获取空节点
-        assert TreeCache.get(0) == null;
-
-        //测试获取根节点
-        TreeNode node = TreeCache.getChildren(1, BizType.common);
-        assert node != null;
-
-        assert equal(target, getAllIds(node.getChildren()));
+//        List<Integer> target = target(11, 12, 13, 14, 15, 16);
+//
+////        assert TreeCache.getRoot(BizType.common) != null;
+//
+//        //测试获取空节点
+//        assert TreeCache.get(0) == null;
+//
+//        //测试获取根节点
+////        TreeNode node = TreeCache.getChildren(1, BizType.common);
+//        assert node != null;
+//
+//        assert equal(target, getAllIds(node.getChildren()));
     }
 
 //    @Test
     public void testGetChildrenImage(){
-        List<Integer> target = target( 13, 15, 16);
-        TreeNode node = TreeCache.getChildren(TreeCache.getRoot(BizType.image).getId(), BizType.image);
-        assert node != null;
-        assert equal(target, getAllIds(node.getChildren()));
+//        List<Integer> target = target( 13, 15, 16);
+//        TreeNode node = TreeCache.getChildren(TreeCache.getRoot(BizType.image).getId(), BizType.image);
+//        assert node != null;
+//        assert equal(target, getAllIds(node.getChildren()));
     }
 
     public void testGetChildrenVideo(){

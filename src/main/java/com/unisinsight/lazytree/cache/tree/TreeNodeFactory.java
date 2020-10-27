@@ -55,6 +55,7 @@ public class TreeNodeFactory {
         treeNode.setId(node.getId());
         treeNode.setName(node.getResourceName());
         treeNode.setNodeType(NodeType.get(node.getType(), node.getSubType()));
+        treeNode.setPath(node.getPath());
 
         return treeNode;
     }
