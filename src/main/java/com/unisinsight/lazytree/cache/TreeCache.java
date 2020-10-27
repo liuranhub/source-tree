@@ -179,6 +179,18 @@ public class TreeCache {
         return count;
     }
 
+    public static List<TreeNode> searchCount(String word, Integer limit, Integer offset, BizType type){
+        return TREE.searchLeaf(word, limit, offset, type);
+    }
+
+    public static int searchCount(String word, BizType type){
+        return TREE.searchCount(word, type);
+    }
+
+    public static TreeNode getParent(Integer id){
+        return TREE.getParent(id);
+    }
+
     public static Tree buildSubTreeByCode(List<String> codes, BizType condition){
         if (TREE == null) {
             LOG.info("资源树为初始化");

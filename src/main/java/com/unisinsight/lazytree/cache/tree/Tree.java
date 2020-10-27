@@ -4,6 +4,7 @@ import com.unisinsight.lazytree.cache.condition.BizType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import java.util.*;
 
@@ -14,7 +15,7 @@ public class Tree {
     private String treeId;
     private TreeNode root;
     private Map<Integer, TreeNode> cacheIndex = new HashMap<>();
-    private Map<String, TreeNode> leafNodeIndex = new HashMap<>();
+    private Map<String, TreeNode> leafNodeIndex = new TreeMap<>();
 
     public Tree(TreeNode treeNode) {
         treeId = UUID.randomUUID().toString();
@@ -26,6 +27,61 @@ public class Tree {
         root = null;
         cacheIndex.clear();
         cacheIndex.clear();
+    }
+
+    public List<TreeNode> searchLeaf(String word, Integer limit, Integer offset, BizType type) {
+        List<TreeNode> result = new ArrayList<>();
+        int offsetNum = 0;
+        for (TreeNode node : leafNodeIndex.values()){
+            if (StringUtils.isEmpty(node.getName())
+                    || !node.getName().contains(word)
+                    || !node.getBizType().contains(type)) {
+                continue;
+            }
+
+            offsetNum ++;
+            if (offsetNum > offset) {
+                result.add(TreeNodeFactory.createSimpleNode(node));
+            }
+
+            if (offsetNum - limit == offset) {
+                break;
+            }
+        }
+        return result;
+    }
+
+    public TreeNode getParent(Integer id) {
+        TreeNode currentNode = cacheIndex.get(id);
+        TreeNode parent = null;
+        while (currentNode != null) {
+            TreeNode newNode = TreeNodeFactory.createSimpleNode(currentNode);
+            if (parent == null) {
+                parent = newNode;
+            } else {
+                newNode.addChild(parent);
+                parent = newNode;
+            }
+
+            currentNode = currentNode.getParent();
+        }
+
+        return parent;
+    }
+
+    public Integer searchCount(String word, BizType type){
+        int count = 0;
+        for (TreeNode node : leafNodeIndex.values()) {
+            if (!node.getBizType().contains(type)){
+                continue;
+            }
+
+            if (!StringUtils.isEmpty(node.getName()) && node.getName().contains(word)) {
+                count ++;
+            }
+        }
+
+        return count;
     }
 
     public String getTreeId() {
