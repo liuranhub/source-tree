@@ -71,7 +71,7 @@ public class LazyTreeController {
                              @RequestParam(value = "page_num") Integer pageNum,
                              @RequestParam(value = "page_size") Integer pageSize,
                              @RequestParam(value = "type", defaultValue = "common") BizType type){
-        List<TreeNode> data = TreeCache.searchCount(word, pageSize, pageNum * pageSize,  type);
+        List<TreeNode> data = TreeCache.searchCount(word, pageSize, (pageNum - 1) * pageSize,  type);
         int count = TreeCache.searchCount(word, type);
 
         return PageResult.of(data, pageSize, pageNum, count);
