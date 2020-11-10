@@ -11,9 +11,7 @@ import com.unisinsight.lazytree.model.RequestModel;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/v1/lazy-tree")
@@ -43,14 +41,8 @@ public class LazyTreeController {
 
     @PostMapping(value = "/select-tree")
     public TreeNode build(@RequestBody RequestModel req){
-
-        Tree tree = null;
-        if (!CollectionUtils.isEmpty(req.getInclude().getIds())){
-            tree = TreeCache.buildSubTreeById(req.getInclude().getIds(), req.getInclude().getType());
-        } else {
-            tree = TreeCache.buildSubTreeByCode(req.getInclude().getCodes(), req.getInclude().getType());
-        }
-
+        Tree tree = TreeCache.buildSubTree(req.getInclude().getIds(),
+                req.getInclude().getCodes(), req.getInclude().getType());
         return tree == null ? new TreeNode() : tree.getRoot();
     }
 

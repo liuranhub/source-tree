@@ -191,7 +191,68 @@ public class TreeCache {
         return TREE.getParent(id);
     }
 
-    public static Tree buildSubTreeByCode(List<String> codes, BizType condition){
+    public static Tree buildSubTree(List<Integer> ids, List<String> codes, BizType condition) {
+        Tree treeId = null;
+        if (!CollectionUtils.isEmpty(ids)){
+            treeId = TreeCache.buildSubTreeById(ids, condition);
+        }
+        Tree treeCode = null;
+        if (!CollectionUtils.isEmpty(codes)){
+            treeCode = TreeCache.buildSubTreeByCode(codes, condition);
+        }
+
+        return merge(treeId, treeCode);
+    }
+
+    private static Tree merge(Tree first, Tree second){
+        if (first == null) {
+            return second;
+        }
+        if (second == null) {
+            return first;
+        }
+
+        Map<Integer, List<TreeNode>> secondTreeChildMap = new HashMap<>();
+        toMap(second.getRoot(),  secondTreeChildMap);
+        merge(first.getRoot(), secondTreeChildMap);
+        return first;
+    }
+
+    private static void merge(TreeNode root, Map<Integer, List<TreeNode>> map){
+        if (!CollectionUtils.isEmpty(root.getChildren())) {
+            for (TreeNode child : root.getChildren()) {
+                merge(child, map);
+            }
+        }
+
+        List<TreeNode> secondTreeChild = map.get(root.getId());
+        if (CollectionUtils.isEmpty(secondTreeChild)){
+            return;
+        }
+
+        Set<Integer> ids = new HashSet<>();
+        for (TreeNode child : root.getChildren()) {
+            ids.add(child.getId());
+        }
+
+        for (TreeNode child : secondTreeChild) {
+            if (!ids.contains(child.getId())){
+                root.addChild(child);
+            }
+        }
+    }
+
+    private static void toMap(TreeNode root, Map<Integer, List<TreeNode>> secondTreeChildMap){
+        if (CollectionUtils.isEmpty(root.getChildren())) {
+            return;
+        }
+        secondTreeChildMap.put(root.getId(), root.getChildren());
+        for (TreeNode child : root.getChildren()) {
+            toMap(child, secondTreeChildMap);
+        }
+    }
+
+    private static Tree buildSubTreeByCode(List<String> codes, BizType condition){
         if (TREE == null) {
             LOG.info("资源树为初始化");
             return null;
@@ -211,7 +272,7 @@ public class TreeCache {
         return buildSubTree(ids, condition, true);
     }
 
-    public static Tree buildSubTreeById(List<Integer> nodeIds, BizType condition){
+    private static Tree buildSubTreeById(List<Integer> nodeIds, BizType condition){
         if (TREE == null) {
             LOG.info("资源树为初始化");
             return null;
@@ -223,7 +284,7 @@ public class TreeCache {
     /**
      * 通过给定节点ID生成子树，且字数包含根节点
      * */
-    public static Tree buildSubTree(List<Integer> nodeIds, BizType condition, boolean reshow){
+    private static Tree buildSubTree(List<Integer> nodeIds, BizType condition, boolean reshow){
         if (CollectionUtils.isEmpty(nodeIds)) {
             return null;
         }
