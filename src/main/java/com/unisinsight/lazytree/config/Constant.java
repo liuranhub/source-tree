@@ -57,6 +57,7 @@ public class Constant {
                 UUV_URL = uuvUrl;
             }
 
+
         } catch (IOException e) {
             e.printStackTrace();
         }

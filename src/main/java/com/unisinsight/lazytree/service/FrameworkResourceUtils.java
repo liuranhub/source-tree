@@ -12,7 +12,7 @@ import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,7 +26,7 @@ public class FrameworkResourceUtils {
     static {
         mapper.setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE);
         List<ClientHttpRequestInterceptor> interceptors = new ArrayList<>();
-        interceptors.add(getDefaultInterceptor(Constant.USER_ADMIN, Constant.USER_ADMIN));
+       // interceptors.add(getDefaultInterceptor(Constant.USER_ADMIN, Constant.USER_ADMIN));
         restTemplate.setInterceptors(interceptors);
 
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
@@ -39,23 +39,49 @@ public class FrameworkResourceUtils {
     public static ResourceTreeModel getFullTree(){
         String path = Constant.UUV_URL + Constant.RESOURCE_TREE;
         ResponseEntity<String> entity = restTemplate.getForEntity(path, String.class);
-        ResourceTreeModel result = null;
+
+
+        Result<List<ResourceTreeModel.TreeNode>> result = null ;
         try {
-            result = mapper.readValue(entity.getBody(), new TypeReference<ResourceTreeModel>() {
+            result = mapper.readValue(entity.getBody(), new TypeReference<Result<List<ResourceTreeModel.TreeNode>>>() {
             });
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return result;
+
+        return null;
     }
 
-    private static ClientHttpRequestInterceptor getDefaultInterceptor(String userCode, String userName){
-        return (HttpRequest request, byte[] body, ClientHttpRequestExecution execution) -> {
-            HttpHeaders headers = request.getHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.set("User", "usercode:" + userCode + "&username:" + userName);
-            return execution.execute(request, body);
-        };
+
+
+    public static void main(String[] args) {
+
+        File file = new File("D:\\liuran\\tmp\\response.json");
+        StringBuilder lines = new StringBuilder();
+        try {
+            BufferedReader reader = new BufferedReader(new FileReader(file));
+            String str;
+            try {
+                while ((str = reader.readLine()) != null) {
+                    lines.append(str);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        Result<ResourceTreeModel> result = null ;
+        try {
+            result = mapper.readValue(lines.toString(), new TypeReference<Result<ResourceTreeModel>>() {
+            });
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return;
     }
 
 }
